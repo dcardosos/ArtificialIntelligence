@@ -1,2 +1,0 @@
-a <- 'opa'
-print(a)
