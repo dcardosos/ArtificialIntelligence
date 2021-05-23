@@ -1,0 +1,3 @@
+https://www.youtube.com/results?search_query=statquest+clustering
+https://learn.datacamp.com/courses/cluster-analysis-in-python
+
