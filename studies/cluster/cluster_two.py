@@ -39,3 +39,5 @@ class ClusterTwo:
                         hue = hue, 
                         data = self.df,
                         palette = 'tab10')
+
+                        
