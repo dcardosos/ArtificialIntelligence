@@ -1,4 +1,7 @@
 from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.cluster.vq import kmeans, vq
+from scipy.cluster.hierarchy import dendrogram
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.cluster.vq import whiten
@@ -38,7 +41,7 @@ class ClusterTwo:
 
     ## Clusterization methods
     
-    def hierarchical_clustering(self, method, metric = 'euclidean', n_cluster = 3, criterion = 'maxclust'):
+    def hierarchical_clustering(self, x, y, method, metric = 'euclidean', n_cluster = 3, criterion = 'maxclust'):
         '''
         Retorna o objeto da classe (um dataframe) com a coluna dos labels
         adicionada, de acordo com o algorítimo de clusterização Hirarchical.
@@ -56,7 +59,7 @@ class ClusterTwo:
                     DataFrame (pd.dataframe): Pandas Dataframe uma coluna a mais dos clusters labels.
         '''
         
-        Z = linkage(self.df, method)
+        Z = linkage(self.df[[x, y]], method)
 
         self.df[f'cluster_hierarchical_labels'] = fcluster(Z, n_cluster, criterion=criterion)
         
@@ -65,7 +68,7 @@ class ClusterTwo:
         return self.df
 
 
-    def kmeans_clustering(self, n_clusters, x, y, check_finite = True, ):
+    def kmeans_clustering(self, x, y, n_clusters, check_finite = True, ):
 
         '''
         Retorna o objeto da classe (um dataframe) com a coluna dos labels
@@ -74,6 +77,7 @@ class ClusterTwo:
             Parameters:
                     x (str): Nome da coluna 
                     y (str): Nome da outra coluna
+                    n_clusters (int): Número de clusters a ser utilizado
                     check_finite (bool): Indica se uma verificação funciona se tiver um NaN no conjunto dos dados (default = True)
 
             Returns:
@@ -100,7 +104,7 @@ class ClusterTwo:
         plt.show()
 
 
-    def elbow_plot(self, cluster_range, x, y):
+    def elbow_plot(self, x, y, cluster_range):
 
         '''
         Apenas plota uma gráfico de linha com abscissa sendo o range de clusters definidos e com a ordenada as distorções totais. 
