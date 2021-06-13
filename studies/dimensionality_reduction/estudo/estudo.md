@@ -134,3 +134,145 @@ to_drop = [c for c in df.columns if any(tri_df[c] > 0.95) ] # 0.95 -- min correl
 # drop those columns
 reduce_df = df.drop(to_drop, axis = 1)
 ```
+
+# Feature selection II, selecting for model accuracy
+
+## Selecting features for model performance
+
+Primeiro, padronizamos os dados para podermos comparar cada feature no futuro. Em um exemplo de logistic regression, podemos ver o quanto cada coeficiente contribui para o modelo com `lr.coef_` - quanto mais próximo de zero, menor a contribuição para o predict. Depois dropamos essa feature. Existe uma ferramenta que faz isso para nós, *Recursive Feature Elimination*. É uma algoritmo dde feature selection que trabalha recursivamente treinando o modelo com o a quantidade de `n_features_to_select` definido, que são os maiores coeficientes.  
+
+```python
+from sklearn.feature_selection import RFE
+
+rfe = RFE(estimator = LogisticRegression(), n_features_to_select = 2, verbose = 1)
+rfe.fit(X_train ,y_train)
+
+
+# features que foram mantidas
+X.columns[rfe.support_]
+
+# ranking das features, em qual iteração uma feature foi descartada?
+# 1 significa que a feature foi mantida até o fim (lembre, é recursivamente)
+dict(zip(X.columns, rfe.ranking_))
+```
+
+## Tree-based feature selection
+Podemos usar o algoritimo de Random Forest Classifier, por exemplo, para extrair a importância de cada feature, para relembrar:
+
+```python
+
+rf = RandomForestClassifer()
+rf.fit(X_train, y_train)
+
+# feature importances está entre 0 e 1, ou seja
+# sum(rf.feature_importances_) == 1
+# isto é, não precisamos normalizar os nossos dados
+print(rf.feature_importances_)
+
+# para dropar algumas features menos importantes
+mask = rf.feature_importances_ > 0.1 # (arbitrário aqui) -- retorna um array booleano
+
+# aplicando ao data frame
+X_reduced = X.loc[:, mask]
+ 
+# em vez de dropard e um em um, utilizadmos o RFE
+
+rfe = RFE(estimator = RandomForestClassifier(), 
+          n_features_to_select = 6, verbose = 1)
+
+# o processo pode ser demorado, para evitar isso e limitar as iterações
+# podemos definir que: em cada iteração, drop N features, no exemplo abaixo
+# estamos dizendo: olha, pra cada iteração, dropa as 10 features menos importantes pfvr
+rfe = RFE(estimator = RandomForestClassifier(), 
+          n_features_to_select = 6, step = 10, verbose = 1)
+
+# vendo o que sobrou desse role todo
+print(X.columns[rfe.support_]) # lembre, isso aqui é um array booleano!
+
+# reduced df
+X_reduced = X.loc[:, rfe.support_] 
+```
+
+## O que podemos fazer com regressões?
+O coeficiente linear indica a feature importance. Um modelo linear, por exemplo, tenta encontrar valores ótimos para a interceptação e coeficientes, minimizando uma função de perda que, nesse caso, é o *Mean Squared Error*  entre os valores preditos e os reais. Querer uma reta muito bem ajustada pode ser uma faca de dois gumes, pois ao mesmo tempo que age super bem no conjunto de teste, pode não conseguir generalizar para dados não vistos ainda. Para evitar isso, introduzimos a **regularization**.
+
+$$
+Model + \alpha(\mid \beta_1 \mid + \mid \beta_2 \mid + \mid \beta_3 \mid)
+$$
+
+Essa regularização vai tentar manter o model simples mantendo os coeficientes baixos através do $\alpha$. Em modelos lineares, isso se chama *Lasso*
+
+```python
+from sklearn.linear_model import Lasso
+
+# Set the test size to 30% to get a 70-30% train test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3, random_state=0)
+
+# Fit the scaler on the training features and transform these in one go
+X_train_std = scaler.fit_transform(X_train)
+
+# Create the Lasso model
+la = Lasso()
+
+# Fit it to the standardized training data
+la.fit(X_train_std, y_train)
+```
+
+## Combining feature selectos
+Encontrar o valor de $\alpha$ na mão pode resultar em erro e é trabalhoso, existem formas de automatizar isso com `LassoCV`. Esse algoritimo usa cross validation.
+
+```python
+from sklearn.linear_model import LassoCV
+
+lcv = LassoCV()
+
+lcv.fit(X_train, y_train)
+
+r_squared = lcv.score(X_test, y_test)
+
+# best alpha
+print(lcv.alpha_)
+
+# mask 
+mask = lcv.coef_ != 0
+
+# reduced df
+
+reduced_X = X.loc[:, mask]
+```
+
+Podemos utilizar todos os exemplos vistos até agora para combiná-los e decidir as features mais importantes, para isso, criamos uma máscara para cada algoritimo feito e depois somamos isso.
+
+```python
+
+votes = np.sum([lcv_mask, rf_mask, gb_mask, x_mask], axis = 0)
+
+# aqui, podemos selecionar nosso critério de quais features pegar,
+# as que tiveram pelo menos 2 votos, por exemplo
+
+mask = votes >= 2
+
+reduced_X = X.loc[:, mask]
+
+# depois, só vrau
+
+# Plug the reduced dataset into a linear regression pipeline
+X_train, X_test, y_train, y_test = train_test_split(X_reduced, y, test_size=0.3, random_state=0)
+
+lm.fit(scaler.fit_transform(X_train), y_train)
+
+r_squared = lm.score(scaler.transform(X_test), y_test)
+
+print('The model can explain {0:.1%} of the variance in the test set using {1:} features.'.format(r_squared, len(lm.coef_)))
+```
+
+# Feature extraction 
+
+
+
+
+
+
+
+
+

@@ -188,3 +188,5 @@ if __name__ == "__main__":
     Y = tsne(X, 2, 50, 20.0)
     pylab.scatter(Y[:, 0], Y[:, 1], 20, labels)
     pylab.show()
+
+
