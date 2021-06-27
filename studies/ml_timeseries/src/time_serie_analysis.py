@@ -92,9 +92,10 @@ class TimeSeriesAnalysis:
         return self.values_interp
 
 
-    def create_features(self, window:int = 21, features:list = np.mean):
+    def create_features(self, window:int = 21, features:list = [np.mean]):
         data_rolling = self.df.rolling(window)
         self.data_features = data_rolling.agg(features)
+        self.data_features.columns = ['_'.join(col) for col in self.data_features]
         return self.data_features
 
 
@@ -133,11 +134,10 @@ class TimeSeriesAnalysis:
     
 
     def scatterplot(self):
-        df_temp = self.df[:]
-        x = df_temp.columns.tolist()[0]
-        y = df_temp.columns.tolist()[1]
+        x = self.df.columns.tolist()[0]
+        y = self.df.columns.tolist()[1]
     
-        fig = px.scatter(df_temp, x = x, y = y, color = df_temp.index)
+        fig = px.scatter(self.df, x = x, y = y, color = self.df.reset_index().index)
         fig.show()
         
     def plot_predict(self, y_test, y_hat):

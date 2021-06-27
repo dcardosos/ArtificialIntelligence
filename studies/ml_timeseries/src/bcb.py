@@ -1,16 +1,14 @@
-reload from importlib import reload
-
 from src.time_serie_analysis import TimeSeriesAnalysis
-reload(src.time_serie_analysis)
 
 ## energia e metal
-energia_metal = TimeSeriesAnalysis(27577, 27576)
-energia_metal.plotly()
+energia_metal = TimeSeriesAnalysis(27577, 'energia', 27576, 'metal')
+energia_metal.plotly_two()
 energia_metal.euclidean_distance()
 
 ## CDI e SELIC: anualizada base 252, %a.a.
 cdi_selic = TimeSeriesAnalysis(4389, 'cdi', 1178, 'selic')
 
+cdi_selic.df
 ### plot
 cdi_selic.plotly_two()
 
@@ -34,9 +32,19 @@ cdi_selic.interpolate_and_plot(dados_teste, 'quadratic')
 cdi_selic.values_pct()
 
 ### moving average
-cdi_selic.create_features(window = 200)
+import numpy as np
+cdi_selic.create_features(window = 365, features=[np.mean, np.max, np.min])
 
 cdi_selic.plot_features()
 
 ## Dynamic Time Warping
 ## Dynamic time warping finds the optimal non-linear alignment between two time series.
+
+euro_libra = TimeSeriesAnalysis(21619, 'euro', 21623, 'libra')
+
+euro_libra.euclidean_distance()
+euro_libra.plotly_two()
+euro_libra.scatterplot()
+euro_libra.ridge_model()
+euro_libra.create_features(window= 200)
+euro_libra.plot_features()
