@@ -1,5 +1,7 @@
+from numpy.lib.function_base import percentile
 import pandas as pd
 import numpy as np
+from functools import partial
 import matplotlib.pyplot as plt
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
@@ -49,12 +51,12 @@ class TimeSeriesAnalysis:
 
         values = self.df.rolling(window= window).agg(self.percent_change)
         
-        self.values_pct = values.agg(self.replace_outlier)
+        self.df_values_pct = values.agg(self.replace_outlier)
 
-        self.values_pct.plot()
+        self.df_values_pct.plot()
         plt.show()
 
-        return self.values_pct    
+        return self.df_values_pct    
 
 
     def percent_change(self, series):
@@ -98,6 +100,28 @@ class TimeSeriesAnalysis:
         self.data_features.columns = ['_'.join(col) for col in self.data_features]
         return self.data_features
 
+    
+    def create_percentiles(self, window:int = 200, percentiles:list = [1, 25, 75, 99]):
+        percentile_fns = [partial(np.percentile, q = perc) for perc in percentiles]
+        feature_percentile = self.create_features(window=window, features= percentile_fns)
+
+        cols = ['_'.join(col) for col in feature_percentile]
+        cols_enum = [f'{cols[i]}_{percentiles[i]}' for i in range(len(percentiles))] + [f'{cols[i+len(percentiles)]}_{percentiles[i]}' for i in range(len(percentiles))]
+        feature_percentile.columns = cols_enum
+
+        ax = feature_percentile.plot()
+        feature_percentile.plot(ax = ax, color = 'k', alpha= .2, lw = 3)
+        plt.show()
+
+        return feature_percentile
+
+
+    def create_time_features(self, what):
+        self.df['day_of_week'] = self.df.index.weekday
+        self.df['week_of_year'] = self.df.index.week
+        self.df['month_of_year'] = self.df.index.month
+        pass
+    
 
     def euclidean_distance(self):
         return np.sqrt(np.sum((self.df1['valor'] - self.df2['valor'])**2))
